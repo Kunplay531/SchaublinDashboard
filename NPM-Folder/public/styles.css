@@ -78,30 +78,9 @@ html {
     content: "";
     position: absolute;
     top: 0px; left: -0px; right: 0px; bottom: -20px;
-    background: radial-gradient(circle, white 20%, yellow 60%, orange 80%);
-    clip-path: polygon(
-        50% 0%, 61% 35%, 98% 35%, 68% 57%, 
-        79% 91%, 50% 70%, 21% 91%, 32% 57%, 
-        2% 35%, 39% 35%
-    );
+    background: url('stern.svg') no-repeat center;
+    background-size: 100% 100%; /* Stretches to exactly match the box */
     z-index: -1;
-}
-
-/* Halftone dots effect */
-.rpm-box::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle, rgba(0, 0, 0, 0.2) 10%, transparent 50%);
-    background-size: 10px 10px;
-    top: 0px; left: -0px; right: 0px; bottom: -20px;
-    z-index: -1;
-    opacity: 0.5;
-    clip-path: polygon(
-        50% 0%, 61% 35%, 98% 35%, 68% 57%, 
-        79% 91%, 50% 70%, 21% 91%, 32% 57%, 
-        2% 35%, 39% 35%
-    );
 }
 
 /* RPM Text */

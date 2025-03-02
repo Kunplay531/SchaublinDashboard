@@ -29,7 +29,7 @@
     let reconnectAttempts = {}; // Track reconnect attempts for backoff
 
     function initializeSockets() {
-        rpmSocket = createWebSocket("ws://localhost:8000", handleRpmMessage);
+        rpmSocket = createWebSocket("ws://192.168.1.186:8000", handleRpmMessage);
         // powerSocket = createWebSocket("ws://192.168.1.186:8001", handlePowerMessage);
         estopSocket = createWebSocket("ws://192.168.1.186:8002", handleEStopMessage);
         startHeartbeat();
@@ -50,9 +50,6 @@
 
         socket.onclose = (event) => {
             console.log(`WebSocket disconnected from ${url}. Reason: ${event.reason} Code: ${event.code}`);
-            if (event.code !== 1000) { // Avoid reconnecting if closed normally
-                reconnectSocket(url, onMessageHandler);
-            }
         };
 
         socket.onerror = (error) => console.error(`WebSocket error on ${url}:`, error);
@@ -144,7 +141,7 @@
                 rpmSocket.send("ping");
                 setTimeout(() => {
                     if (rpmSocket.readyState !== WebSocket.OPEN) {
-                        reconnectSocket("ws://localhost:8000", handleRpmMessage);
+                        reconnectSocket("ws://192.168.1.186:8000", handleRpmMessage);
                     }
                 }, 2000);
             }
