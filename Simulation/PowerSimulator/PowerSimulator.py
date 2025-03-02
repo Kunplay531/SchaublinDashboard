@@ -9,11 +9,11 @@ async def power_sender_random(websocket):
             random_value = str(random.randint(1, 100))
             await websocket.send(random_value)
             print(f"Sent random value: {random_value}")
-            await asyncio.sleep(1)
+            await asyncio.sleep(5)
     except KeyboardInterrupt:
         print("Stopped sending random values.")
 
-async def power_sender(websocket, path):
+async def power_sender(websocket):
     print("Client connected. Start entering RPM values.")
     try:
         while True:

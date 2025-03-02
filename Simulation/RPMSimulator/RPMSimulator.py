@@ -13,7 +13,7 @@ async def rpm_sender_random(websocket):
     except KeyboardInterrupt:
         print("Stopped sending random values.")
 
-async def rpm_sender(websocket, path):
+async def rpm_sender(websocket):
     print("Client connected. Start entering RPM values.")
     try:
         while True:
@@ -27,7 +27,7 @@ async def rpm_sender(websocket, path):
 
 async def main():
     # Start the WebSocket server on 0.0.0.0 and port 8080
-    async with websockets.serve(rpm_sender_random, "0.0.0.0", 8000):
+    async with websockets.serve(rpm_sender, "0.0.0.0", 8000):
         print("WebSocket server is running on ws://0.0.0.0:8000")
         await asyncio.Future()  # Run forever
 

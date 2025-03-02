@@ -9,8 +9,8 @@ body {
     padding: 0;
 }
 
-html{
-    height: 100vh;
+html {
+    height: 100vh;  
 }
 
 .RPMcontainer {
@@ -20,13 +20,39 @@ html{
     justify-content: center;
     width: 100%;
     height: 70vh;
-    background-image: url("../images/Real/work.webp");
+    background-image: url("../images/Real/work.png");
     background-repeat: no-repeat;
     background-size: cover;
+    position: relative;
+    transition: background-image 0.5s ease-in-out;
+    overflow: hidden;
 }
 
+/* Page-Turn Effect */
+.RPMcontainer::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center;
+    transform-origin: right center;
+    transform: rotateY(0deg);
+    transition: transform 0.8s ease-in-out;
+    z-index: 2;
+    clip-path: polygon(
+        0% 0%, 100% 0%, 100% 100%, 0% 100%
+    ); /* Will animate */
+}
+
+/* Active flip effect */
+.flip-effect::before {
+    transform: rotateY(180deg);
+}
+
+/* RPM Box - Comic Book Style */
 .rpm-box {
-    font-family: 'Bangers';
+    font-family: 'Bangers', cursive;
     font-size: 8em;
     font-weight: bold;
     text-align: center;
@@ -37,9 +63,7 @@ html{
     text-transform: uppercase;
     position: relative;
     display: inline-block;
-    
-    
-    
+
     text-shadow: 
         -5px -5px 0 #000, 
         5px -5px 0 #000, 
@@ -78,10 +102,15 @@ html{
         79% 91%, 50% 70%, 21% 91%, 32% 57%, 
         2% 35%, 39% 35%
     );
-    
 }
 
-.RPM-text{
+/* RPM Text */
+.RPM-text {
     font-size: 40px;
     margin-left: -10px;
+}
+
+/* Hide RPM text when emergency stop is active */
+.hide-rpm-text {
+    display: none;
 }
