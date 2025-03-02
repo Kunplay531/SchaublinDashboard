@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div class="RPMcontainer">
+    <div class="rpm-box">
+        <span  id="rpm-value">...</span>
+        <span class="RPM-text">RPM</span>
+    </div>
+</div>
+
+<!-- WebSocket connection getting the rpm readings -->
+<script>
+    const rpmValueElement = document.getElementById("rpm-value");
+    const rpmContainer = document.querySelector(".RPMcontainer");
+
+    let rpmSocket = null;
+    let powerSocket = null;
+    let pingInterval = null;
+
+    function initializeSockets() {
+        // Initialize RPM WebSocket
+        rpmSocket = createWebSocket("ws://Localhost:8000", handleRpmMessage);
+
+        // Initialize Power WebSocket
+        powerSocket = createWebSocket("ws://192.168.1.186:8001", handlePowerMessage);
+
+        // Start heartbeat to maintain connections
+        startHeartbeat();
+    }
+
+    function createWebSocket(url, onMessageHandler) {
+        const socket = new WebSocket(url);
+
+        socket.onopen = () => console.log(`WebSocket connected to ${url}`);
+        socket.onmessage = onMessageHandler;
+        socket.onclose = () => {
+            console.log(`WebSocket disconnected from ${url}. Reconnecting...`);
+            if (url.includes("8000")) {
+                displayReconnectingMessage();
+            }
+            reconnectSocket(url, onMessageHandler);
+        };
+        socket.onerror = (error) => console.error(`WebSocket error on ${url}:`, error);
+
+        return socket;
+    }
+
+    function reconnectSocket(url, onMessageHandler) {
+        setTimeout(() => {
+            const newSocket = createWebSocket(url, onMessageHandler);
+            if (url.includes("8000")) {
+                rpmSocket = newSocket;
+            } else if (url.includes("8001")) {
+                powerSocket = newSocket;
+            }
+        }, 3000); // Wait 3 seconds before reconnecting
+    }
+
+    function startHeartbeat() {
+        if (pingInterval) clearInterval(pingInterval);
+
+        pingInterval = setInterval(() => {
+            if (rpmSocket.readyState !== WebSocket.OPEN) {
+                console.log("RPM WebSocket unresponsive. Reconnecting...");
+                displayReconnectingMessage();
+                reconnectSocket("ws://192.168.1.186:8000", handleRpmMessage);
+            }
+
+            if (powerSocket.readyState !== WebSocket.OPEN) {
+                console.log("Power WebSocket unresponsive. Reconnecting...");
+                reconnectSocket("ws://192.168.1.186:8001", handlePowerMessage);
+            }
+        }, 5000); // Check every 5 seconds
+    }
+
+    function handleRpmMessage(event) {
+        const rpmValue = event.data;
+        if (rpmValue > 2000) {
+            rpmValueElement.style.color = "yellow";
+            rpmContainer.style.backgroundImage = "url(../images/Real/Turbo.webp)";
+        } else {
+            rpmValueElement.style.color = "white";
+            rpmContainer.style.backgroundImage = "url(../images/Real/work.webp)";
+        }
+        rpmValueElement.textContent = rpmValue;
+    }
+
+    function handlePowerMessage(event) {
+        const fillPercentage = event.data || 0;
+        //updateBackgroundFill(fillPercentage);
+    }
+
+    function updateBackgroundFill(fillPercentage) {
+        const rpmBox = document.querySelector('.rpm-box');
+        if (rpmBox) {
+            rpmBox.style.setProperty('--fill-percentage', `${fillPercentage}%`);
+        }
+    }
+
+    function displayReconnectingMessage() {
+        rpmValueElement.textContent = "...";
+        rpmValueElement.style.color = "white";
+        updateBackgroundFill(0);
+    }
+
+    // Handle page visibility changes
+    document.addEventListener("visibilitychange", function () {
+        console.log("Visibility change detected");
+        if (document.visibilityState === "visible") {
+            if (rpmSocket.readyState !== WebSocket.OPEN) {
+                displayReconnectingMessage();
+                reconnectSocket("ws://192.168.1.186:8000", handleRpmMessage);
+            }
+            if (powerSocket.readyState !== WebSocket.OPEN) {
+                reconnectSocket("ws://192.168.1.186:8001", handlePowerMessage);
+            }
+        }
+    });
+
+    // Initialize WebSocket connections
+    initializeSockets();
+</script>
+
+
+
+</body>
+</html>
