@@ -20,34 +20,26 @@ html {
     justify-content: center;
     width: 100%;
     height: 70vh;
-    background-image: url("../images/Real/work.png");
-    background-repeat: no-repeat;
-    background-size: cover;
     position: relative;
-    transition: background-image 0.5s ease-in-out;
     overflow: hidden;
+    background: black; /* Fallback background to avoid white flashes */
 }
 
-/* Page-Turn Effect */
-.RPMcontainer::before {
-    content: "";
+/* Stacked Backgrounds for Instant Switching */
+.RPMcontainer .background-layer {
     position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 130%;
     background-size: cover;
     background-position: center;
-    transform-origin: right center;
-    transform: rotateY(0deg);
-    transition: transform 0.8s ease-in-out;
-    z-index: 2;
-    clip-path: polygon(
-        0% 0%, 100% 0%, 100% 100%, 0% 100%
-    ); /* Will animate */
+    opacity: 0; /* Initially hidden */
+    transition: opacity 0.2s ease-in-out; /* Smooth fade effect */
 }
 
-/* Active flip effect */
-.flip-effect::before {
-    transform: rotateY(180deg);
+.RPMcontainer .background-layer.active {
+    opacity: 1; /* Show the default background */
 }
 
 /* RPM Box - Comic Book Style */
