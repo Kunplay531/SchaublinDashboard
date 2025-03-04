@@ -16,6 +16,7 @@ let pingInterval = null;
 let reconnectInterval = null;
 let reconnectAttempts = {};
 
+
 function changeBackground(activeBg) {
     // Remove 'active' class from all backgrounds
     Object.values(backgrounds).forEach(bg => bg.classList.remove("active"));
@@ -55,6 +56,11 @@ function createWebSocket(url, onMessageHandler) {
     };
 
     socket.onmessage = (event) => {
+        if (event.data === "ping") {
+            console.log("Received ping, sending pong...");
+            socket.send("pong");  // Respond to keepalive ping
+            return; // Ignore further processing
+        }
         if (event.data === "pong") return; // Ignore pong responses
         onMessageHandler(event);
     };
@@ -108,7 +114,7 @@ function startHeartbeat() {
     pingInterval = setInterval(() => {
         if (rpmSocket && rpmSocket.readyState === WebSocket.OPEN) rpmSocket.send("ping");
         if (estopSocket && estopSocket.readyState === WebSocket.OPEN) estopSocket.send("ping");
-    }, 5000);
+    }, 1000);
 }
 
 // Function to handle RPM WebSocket messages
