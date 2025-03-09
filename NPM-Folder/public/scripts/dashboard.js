@@ -1,3 +1,5 @@
+
+
 // ======== DOM Elements =========
 const rpmValueElement = document.getElementById("rpm-value");
 const rpmTextElement  = document.querySelector(".RPM-text");
@@ -20,7 +22,7 @@ function changeBackground(bgToActivate) {
 
 // ======== Connect to RPM Socket =========
 function connectRpmSocket() {
-  rpmSocket = new WebSocket("ws://192.168.1.186:8000");
+  rpmSocket = new WebSocket("ws://Schaublin.local:8000");
 
   rpmSocket.onopen = () => {
     console.log("[RPM] Connected");
@@ -67,7 +69,7 @@ function connectRpmSocket() {
 
 // ======== Connect to E-Stop Socket =========
 function connectEstopSocket() {
-  estopSocket = new WebSocket("ws://192.168.1.186:8002");
+  estopSocket = new WebSocket("ws://Schaublin.local:8002");
 
   estopSocket.onopen = () => {
     console.log("[E-Stop] Connected");

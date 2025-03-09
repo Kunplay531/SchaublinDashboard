@@ -7,3 +7,11 @@ services:
     environment:
       - NODE_ENV=production
     restart: unless-stopped
+  rpm-meter:
+    build: RPM-Meter/
+    container_name: rpm-meter
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  
