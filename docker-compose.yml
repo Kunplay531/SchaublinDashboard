@@ -13,5 +13,10 @@ services:
     ports:
       - "8000:8000"
     restart: unless-stopped
-
-  
+    privileged: true  # Gebe dem Container privilegierten Zugriff auf das Host-System
+    devices:
+      - "/dev/gpiomem:/dev/gpiomem"  # Gib Zugriff auf das GPIO-Memory Device
+    volumes:
+      - /sys/class/gpio:/sys/class/gpio:r  # Ermögliche das Schreiben in GPIO-Dateien
+    environment:
+      - PYTHONUNBUFFERED=1

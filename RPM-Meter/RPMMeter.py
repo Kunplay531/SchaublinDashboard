@@ -1,11 +1,17 @@
 import asyncio
 import websockets
-import RPi.GPIO as GPIO
 import time
 
-# Definiere GPIO 27 als Eingang
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(27, GPIO.IN)
+# Definiere den GPIO-Pin (Pin 27)
+gpio_pin = 27
+
+# Setup GPIO 27 als Eingang
+with open(f'/sys/class/gpio/export', 'w') as f:
+    f.write(str(gpio_pin))
+
+# Setze GPIO 27 als Eingang
+with open(f'/sys/class/gpio/gpio{gpio_pin}/direction', 'w') as f:
+    f.write('in')
 
 # Variablen zur Berechnung der RPM
 last_time = time.time()
@@ -30,19 +36,20 @@ def calculate_rpm():
         last_time = current_time
         print(f"Calculated RPM: {rpm_value}")
 
-# Callback-Funktion, die bei jedem HIGH-Signal des Sensors aufgerufen wird
-def sensor_callback(channel):
+# Funktion zum Überwachen des GPIO-Pins
+def read_gpio():
     global pulse_count
-    pulse_count += 1
-
-# Setze den Callback für das Abtasten des GPIOs
-GPIO.add_event_detect(27, GPIO.RISING, callback=sensor_callback)
+    with open(f'/sys/class/gpio/gpio{gpio_pin}/value', 'r') as f:
+        value = f.read().strip()
+        if value == '1':  # Wenn der Pin HIGH ist
+            pulse_count += 1
 
 async def rpm_sender(websocket):
     print("Client connected. Sending RPM values.")
     try:
         while True:
-            calculate_rpm()
+            read_gpio()  # Überprüfe den GPIO
+            calculate_rpm()  # Berechne die RPM
             # Sende die berechnete RPM an den WebSocket-Client
             await websocket.send(str(rpm_value))
             print(f"Sent RPM value: {rpm_value}")
