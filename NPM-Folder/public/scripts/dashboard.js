@@ -1,163 +1,127 @@
+// ======== DOM Elements =========
 const rpmValueElement = document.getElementById("rpm-value");
-const rpmContainer = document.querySelector(".RPMcontainer");
-const rpmTextElement = document.querySelector(".RPM-text");
-
-// Background layers (preloaded for instant switch)
+const rpmTextElement  = document.querySelector(".RPM-text");
 const backgrounds = {
-    work: document.getElementById("bg-work"),
-    turbo: document.getElementById("bg-turbo"),
-    jail: document.getElementById("bg-jail")
+  work : document.getElementById("bg-work"),
+  turbo: document.getElementById("bg-turbo"),
+  jail : document.getElementById("bg-jail"),
 };
 
-let e_stop = 0;
-let rpmSocket = null;
-let estopSocket = null;
-let pingInterval = null;
-let reconnectInterval = null;
-let reconnectAttempts = {};
+// ======== Global State =========
+let e_stop     = false;
+let rpmSocket  = null;
+let estopSocket= null;
 
-
-function changeBackground(activeBg) {
-    // Remove 'active' class from all backgrounds
-    Object.values(backgrounds).forEach(bg => bg.classList.remove("active"));
-
-    // Add 'active' class to the selected background
-    activeBg.classList.add("active");
+// ======== Helper: change background =========
+function changeBackground(bgToActivate) {
+  Object.values(backgrounds).forEach(bg => bg.classList.remove("active"));
+  if (bgToActivate) bgToActivate.classList.add("active");
 }
 
-// Function to initialize WebSockets
-function initializeSockets() {
-    connectRpmSocket();
-    connectEstopSocket();
-    startHeartbeat();
-    startConnectionMonitor();
-}
-
-
-// Function to create and connect RPM WebSocket
+// ======== Connect to RPM Socket =========
 function connectRpmSocket() {
-    if (rpmSocket) rpmSocket.close(); // Ensure no duplicate connections
-    rpmSocket = createWebSocket("ws://192.168.1.186:8000", handleRpmMessage);
-}
+  rpmSocket = new WebSocket("ws://192.168.1.186:8000");
 
-// Function to create and connect E-Stop WebSocket
-function connectEstopSocket() {
-    if (estopSocket) estopSocket.close();
-    estopSocket = createWebSocket("ws://192.168.1.186:8002", handleEStopMessage);
-}
+  rpmSocket.onopen = () => {
+    console.log("[RPM] Connected");
+  };
 
-// Function to create WebSocket and handle reconnect logic
-function createWebSocket(url, onMessageHandler) {
-    const socket = new WebSocket(url);
-    
-    socket.onopen = () => {
-        console.log(`WebSocket connected to ${url}`);
-        reconnectAttempts[url] = 0; // Reset reconnect attempts
-    };
+  rpmSocket.onmessage = (event) => {
+    // Ignore keep-alive "pong"
+    if (event.data === "pong") return;
 
-    socket.onmessage = (event) => {
-        if (event.data === "ping") {
-            console.log("Received ping, sending pong...");
-            socket.send("pong");  // Respond to keepalive ping
-            return; // Ignore further processing
-        }
-        if (event.data === "pong") return; // Ignore pong responses
-        onMessageHandler(event);
-    };
+    // If server sends "ping," respond with "pong"
+    if (event.data === "ping") {
+      rpmSocket.send("pong");
+      return;
+    }
 
-    socket.onclose = (event) => {
-        console.log(`WebSocket disconnected from ${url}. Reason: ${event.reason} Code: ${event.code}`);
-        if (url.includes("8000")) displayReconnectingMessage();
-    };
+    // Don’t update display if E-Stop is active
+    if (e_stop) return;
 
-    socket.onerror = (error) => {
-        console.error(`WebSocket error on ${url}:`, error);
-    };
+    // Handle the RPM value
+    const rpm = parseInt(event.data, 10) || 0;
+    rpmValueElement.textContent = rpm;
 
-    return socket;
-}
-
-// Function to handle reconnection
-function reconnectSocket(url) {
-    const attempt = reconnectAttempts[url] || 1;
-    const delay = Math.min(3000 * attempt, 10000); // Exponential backoff (max 10s)
-
-    console.log(`Attempting to reconnect to ${url} in ${delay / 1000} seconds...`);
-    
-    setTimeout(() => {
-        if (url.includes("8000")) {
-            connectRpmSocket();
-            displayReconnectingMessage();
-        } else if (url.includes("8002")) {
-            connectEstopSocket();
-        }
-        reconnectAttempts[url] = attempt + 1; // Increase backoff
-    }, delay);
-}
-
-// Function to continuously check WebSocket status and reconnect if necessary
-function startConnectionMonitor() {
-    if (reconnectInterval) clearInterval(reconnectInterval);
-    reconnectInterval = setInterval(() => {
-        if (!rpmSocket || rpmSocket.readyState === WebSocket.CLOSED) {
-            reconnectSocket("ws://192.168.1.186:8000");
-        }
-        if (!estopSocket || estopSocket.readyState === WebSocket.CLOSED) {
-            reconnectSocket("ws://192.168.1.186:8002");
-        }
-    }, 5000); // Check every 5 seconds
-}
-
-// Function to send heartbeat signals to keep connections alive
-function startHeartbeat() {
-    if (pingInterval) clearInterval(pingInterval);
-    pingInterval = setInterval(() => {
-        if (rpmSocket && rpmSocket.readyState === WebSocket.OPEN) rpmSocket.send("ping");
-        if (estopSocket && estopSocket.readyState === WebSocket.OPEN) estopSocket.send("ping");
-    }, 1000);
-}
-
-// Function to handle RPM WebSocket messages
-function handleRpmMessage(event) {
-    if (e_stop === 1) return;
-
-    const rpmValue = event.data;
-    rpmValueElement.textContent = rpmValue;
-
-    if (rpmValue > 2000) {
-        rpmValueElement.style.color = "yellow";
-        changeBackground(backgrounds.turbo);
+    if (rpm > 2000) {
+      rpmValueElement.style.color = "yellow";
+      changeBackground(backgrounds.turbo);
     } else {
-        rpmValueElement.style.color = "white";
-        changeBackground(backgrounds.work);
+      rpmValueElement.style.color = "white";
+      changeBackground(backgrounds.work);
     }
+  };
+
+  // On close or error, try reconnecting after short delay
+  rpmSocket.onclose = () => {
+    console.log("[RPM] Disconnected – retry in 2s");
+    setTimeout(connectRpmSocket, 2000);
+  };
+
+  rpmSocket.onerror = (err) => {
+    console.error("[RPM] Socket error:", err);
+    // Close before reconnecting to ensure a clean state
+    rpmSocket.close();
+  };
 }
 
-// Function to handle E-Stop WebSocket messages
-function handleEStopMessage(event) {
-    const estopValue = event.data;
-    if (estopValue === "1") {
-        e_stop = 1;
-        rpmValueElement.style.color = "red";
-        rpmValueElement.textContent = "Not AUS!!!";
-        changeBackground(backgrounds.jail);
-        rpmTextElement.style.display = "none";
-    } else if (estopValue === "0") {
-        e_stop = 0;
-        rpmValueElement.style.color = "white";
-        rpmValueElement.textContent = "...";
-        changeBackground(backgrounds.work);
-        rpmTextElement.style.display = "inline";
+// ======== Connect to E-Stop Socket =========
+function connectEstopSocket() {
+  estopSocket = new WebSocket("ws://192.168.1.186:8002");
+
+  estopSocket.onopen = () => {
+    console.log("[E-Stop] Connected");
+  };
+
+  estopSocket.onmessage = (event) => {
+    // Ignore keep-alive "pong"
+    if (event.data === "pong") return;
+
+    // If server sends "ping," respond with "pong"
+    if (event.data === "ping") {
+      estopSocket.send("pong");
+      return;
     }
+
+    // If E-Stop is triggered
+    if (event.data === "1") {
+      e_stop = true;
+      rpmValueElement.style.color = "red";
+      rpmValueElement.textContent = "Not AUS!!!";
+      changeBackground(backgrounds.jail);
+      rpmTextElement.style.display = "none";
+    }
+    // If E-Stop is released
+    else if (event.data === "0") {
+      e_stop = false;
+      rpmValueElement.textContent = "...";
+      rpmValueElement.style.color = "white";
+      changeBackground(backgrounds.work);
+      rpmTextElement.style.display = "inline";
+    }
+  };
+
+  estopSocket.onclose = () => {
+    console.log("[E-Stop] Disconnected – retry in 2s");
+    setTimeout(connectEstopSocket, 2000);
+  };
+
+  estopSocket.onerror = (err) => {
+    console.error("[E-Stop] Socket error:", err);
+    estopSocket.close();
+  };
 }
 
+// ======== Periodic Keep-Alive Ping (optional) =========
+setInterval(() => {
+  if (rpmSocket && rpmSocket.readyState === WebSocket.OPEN) {
+    rpmSocket.send("ping");
+  }
+  if (estopSocket && estopSocket.readyState === WebSocket.OPEN) {
+    estopSocket.send("ping");
+  }
+}, 5000); // ping every 5 seconds
 
-// Function to display reconnecting message
-function displayReconnectingMessage() {
-    if (e_stop === 1) return;
-    rpmValueElement.textContent = "...";
-    rpmValueElement.style.color = "red";
-}
-
-// Initialize sockets when the page loads
-initializeSockets();
+// ======== Initialize both sockets on page load =========
+connectRpmSocket();
+connectEstopSocket();
