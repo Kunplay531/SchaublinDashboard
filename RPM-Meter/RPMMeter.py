@@ -1,17 +1,17 @@
 import asyncio
 import websockets
 import time
+import gpiod
 
 # Definiere den GPIO-Pin (Pin 27)
 gpio_pin = 27
 
-# Setup GPIO 27 als Eingang
-with open(f'/sys/class/gpio/export', 'w') as f:
-    f.write(str(gpio_pin))
+# Verwende gpiochip0, um auf GPIO 27 zuzugreifen
+chip = gpiod.Chip('gpiochip0')  # gpiochip0 ist der Standard-GPIO-Controller
+line = chip.get_line(gpio_pin)  # Holen der GPIO-Zeile für Pin 27
 
 # Setze GPIO 27 als Eingang
-with open(f'/sys/class/gpio/gpio{gpio_pin}/direction', 'w') as f:
-    f.write('in')
+line.request(consumer="rpm-meter", type=gpiod.LINE_REQ_DIR_IN)
 
 # Variablen zur Berechnung der RPM
 last_time = time.time()
@@ -36,13 +36,12 @@ def calculate_rpm():
         last_time = current_time
         print(f"Calculated RPM: {rpm_value}")
 
-# Funktion zum Überwachen des GPIO-Pins
+# Funktion zum Überwachen des GPIO-Pins und Zählen der HIGH-Pulse
 def read_gpio():
     global pulse_count
-    with open(f'/sys/class/gpio/gpio{gpio_pin}/value', 'r') as f:
-        value = f.read().strip()
-        if value == '1':  # Wenn der Pin HIGH ist
-            pulse_count += 1
+    value = line.get_value()  # Lese den Wert des GPIO-Pins (0 = LOW, 1 = HIGH)
+    if value == 1:  # Wenn der Pin HIGH ist
+        pulse_count += 1
 
 async def rpm_sender(websocket):
     print("Client connected. Sending RPM values.")

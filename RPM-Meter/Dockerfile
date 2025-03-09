@@ -18,4 +18,4 @@ COPY . .
 EXPOSE 8000
 
 # Command to run the asyncio Python script
-CMD ["python", "RPMSimulator.py"]
+CMD ["python", "RPMMeter.py"]
