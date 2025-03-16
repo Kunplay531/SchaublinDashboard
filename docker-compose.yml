@@ -17,6 +17,6 @@ services:
     devices:
       - "/dev/gpiomem:/dev/gpiomem"  # Gib Zugriff auf das GPIO-Memory Device
     volumes:
-      - /sys/class/gpio:/sys/class/gpio:r  # Ermögliche das Schreiben in GPIO-Dateien
+      - /sys/class/gpio:/sys/class/gpio:rw  # Ermögliche das Schreiben in GPIO-Dateien
     environment:
       - PYTHONUNBUFFERED=1
