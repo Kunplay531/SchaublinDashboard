@@ -14,6 +14,8 @@ last_time = time.time()
 pulse_count = 0
 rpm_value = 0
 
+last_read_high = False
+
 # Frequenz für die Abtastung (120 Hz)
 sampling_interval = 1 / 120  # Zeit pro Abtastung in Sekunden
 
@@ -34,11 +36,14 @@ def calculate_rpm():
 
 # Funktion zum Überwachen des GPIO-Pins und Zählen der HIGH-Pulse
 def read_gpio():
-    global pulse_count
+    global pulse_count, last_read_high
     value = GPIO.input(gpio_pin)  # Index 0, weil wir nur einen Pin angefordert haben
     print(f"Read value on {gpio_pin}: {value}")
-    if value == 1:  # Wenn der Pin HIGH ist
+    if value == 1 and last_read_high = False:  # Wenn der Pin HIGH ist
         pulse_count += 1
+        last_read_high = True
+    else if value == 0:
+        last_read_high = False
 
 async def rpm_sender(websocket):
     print("Client connected. Sending RPM values.")
