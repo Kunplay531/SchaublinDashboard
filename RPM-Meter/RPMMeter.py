@@ -7,62 +7,45 @@ import RPi.GPIO as GPIO
 gpio_pin = 27
 
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(gpio_pin, GPIO.IN)
+GPIO.setup(gpio_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 # Variablen zur Berechnung der RPM
 last_time = time.time()
 pulse_count = 0
 rpm_value = 0
 
-last_read_high = False
+# Funktion zur Verarbeitung der Pulsflanken (Interrupt)
+def pulse_detected(channel):
+    global pulse_count
+    pulse_count += 1  # Jede steigende Flanke als Puls zählen
 
-# Frequenz für die Abtastung (120 Hz)
-sampling_interval = 1 / 120  # Zeit pro Abtastung in Sekunden
+# GPIO Interrupt auf steigende Flanken setzen
+GPIO.add_event_detect(gpio_pin, GPIO.RISING, callback=pulse_detected, bouncetime=2)  # 2 ms debounce
 
 # Funktion zur Berechnung der RPM
 def calculate_rpm():
     global pulse_count, rpm_value, last_time
     current_time = time.time()
-    
-    # Berechne die Zeitspanne, die vergangen ist
     elapsed_time = current_time - last_time
 
-    # Wenn 1 Sekunde vergangen ist, berechne die RPM
-    if elapsed_time >= 1:
-        rpm_value = (pulse_count / elapsed_time) * 60  # Umrechnung in RPM
-        pulse_count = 0  # Zurücksetzen der Pulszählung
+    if elapsed_time >= 1:  # Alle 1 Sekunde RPM berechnen
+        rpm_value = (pulse_count / elapsed_time) * 60
+        pulse_count = 0
         last_time = current_time
-        #print(f"Calculated RPM: {rpm_value}")
-
-# Funktion zum Überwachen des GPIO-Pins und Zählen der HIGH-Pulse
-def read_gpio():
-    global pulse_count, last_read_high
-    value = GPIO.input(gpio_pin)  # Index 0, weil wir nur einen Pin angefordert haben
-    #print(f"Read value on {gpio_pin}: {value}")
-    if value == 1 and last_read_high == False:  # Wenn der Pin HIGH ist
-        pulse_count += 1
-        last_read_high = True
-    elif value == 0:
-        last_read_high = False
 
 async def rpm_sender(websocket):
     print("Client connected. Sending RPM values.")
     try:
         while True:
-            read_gpio()  # Überprüfe den GPIO
-            calculate_rpm()  # Berechne die RPM
-            # Sende die berechnete RPM an den WebSocket-Client
+            calculate_rpm()
             await websocket.send(str(rpm_value))
-            #print(f"Sent RPM value: {rpm_value}")
-            await asyncio.sleep(sampling_interval)
+            await asyncio.sleep(0.1)  # 10 Hz Update-Rate
     except websockets.exceptions.ConnectionClosed:
         print("Client disconnected.")
 
 async def main():
-    # Starte den WebSocket-Server auf Port 8000
     async with websockets.serve(rpm_sender, "0.0.0.0", 8000):
         print("WebSocket server is running on ws://0.0.0.0:8000")
         await asyncio.Future()  # Server läuft für immer
 
-# Starte das Event-Loop
 asyncio.run(main())
