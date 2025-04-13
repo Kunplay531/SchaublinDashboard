@@ -2,6 +2,7 @@ import time
 import RPi.GPIO as GPIO
 import asyncio
 import statistics
+import websockets
 
 gpio_pin = 27
 TIMEOUT_DURATION = 2  # seconds without pulse before resetting RPM
@@ -36,7 +37,13 @@ def pulse_detected(channel):
 GPIO.add_event_detect(gpio_pin, GPIO.RISING, callback=pulse_detected, bouncetime=15)
 
 
-async def main():
+async def ws_starter():
+    async with websockets.serve(rpm_sender, "0.0.0.0", 8000):
+        print("WebSocket server is running on ws://0.0.0.0:8000")
+        await asyncio.Future()  # Server läuft für immer
+
+async def resetter():
+        
     global rpm_value
     while True:
         current_time = time.monotonic()
@@ -46,5 +53,16 @@ async def main():
 
         print(f"RPM: {rpm_value:.2f}")
         await asyncio.sleep(1)  # Update every second
-
-asyncio.run(main())
+        
+async def rpm_sender(websocket):
+     print("Client connected. Sending RPM values.")
+     try:
+         while True:
+             await websocket.send(str(rpm_value))
+             await asyncio.sleep(0.1)  # 10 Hz Update-Rate
+             await asyncio.sleep(0.1)  # Send updates every 100 ms
+     except websockets.exceptions.ConnectionClosed:
+         print("Client disconnected.")
+ 
+asyncio.run(resetter())
+asyncio.run(ws_starter())
