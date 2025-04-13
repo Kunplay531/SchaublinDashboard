@@ -13,7 +13,7 @@ last_pulse_time = None
 rpm_value = 0
 
 # Define threshold: max allowed % change between measurements
-MAX_CHANGE_PERCENT = 10  # Allow ±30% change
+MAX_CHANGE_PERCENT = 30  # Allow ±30% change
 
 def is_outlier(new_value, reference):
     global last_outliers
@@ -21,7 +21,7 @@ def is_outlier(new_value, reference):
     if reference == 0:
         return False
     if len(last_outliers) > 5:
-        change = abs(statistics.median(last_outliers)) / reference * 100
+        change = abs(statistics.median(last_outliers)) / new_value * 100
         if change > MAX_CHANGE_PERCENT:
             last_outliers=[]
             return True
