@@ -22,13 +22,14 @@ def is_outlier(new_value, reference):
         return False
     if len(last_outliers) > 5:
         change = abs(statistics.median(last_outliers)) / new_value * 100
-        if change > MAX_CHANGE_PERCENT:
-            last_outliers=[]
-            return True
-    change = abs(new_value - reference) / reference * 100
-    if change > MAX_CHANGE_PERCENT:
         last_outliers=[]
-        return True
+        if change < MAX_CHANGE_PERCENT:
+            return False
+    change = abs(new_value - reference) / reference * 100
+    if change < MAX_CHANGE_PERCENT:
+        last_outliers=[]
+        return False
+    return True
 
 def pulse_detected(channel):
     global last_pulse_time, rpm_value
