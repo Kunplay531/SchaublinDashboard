@@ -1,7 +1,6 @@
 import time
-import asyncio
-import statistics
 import RPi.GPIO as GPIO
+import asyncio
 
 gpio_pin = 27
 
@@ -9,11 +8,10 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(gpio_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 last_pulse_time = None
-rpm_measurements = []
 rpm_value = 0
 
 # Define threshold: max allowed % change between measurements
-MAX_CHANGE_PERCENT = 30  # e.g. reject values that jump more than ±30%
+MAX_CHANGE_PERCENT = 10  # Allow ±30% change
 
 def is_outlier(new_value, reference):
     if reference == 0:
@@ -22,7 +20,7 @@ def is_outlier(new_value, reference):
     return change > MAX_CHANGE_PERCENT
 
 def pulse_detected(channel):
-    global last_pulse_time, rpm_value, rpm_measurements
+    global last_pulse_time, rpm_value
     current_time = time.monotonic()
 
     if last_pulse_time is not None:
@@ -30,18 +28,12 @@ def pulse_detected(channel):
         if elapsed_time > 0:
             new_rpm = (1 / elapsed_time) * 60
 
-            # Reject outliers based on % change
+            # Filter out sudden spikes
             if not is_outlier(new_rpm, rpm_value):
-                rpm_measurements.append(new_rpm)
-
-                # Keep only the last 5 valid measurements
-                if len(rpm_measurements) > 5:
-                    rpm_measurements.pop(0)
-
-                # Update rpm_value to the median of the valid measurements
-                rpm_value = statistics.median(rpm_measurements)
+                rpm_value = new_rpm
 
     last_pulse_time = current_time
+
 GPIO.add_event_detect(gpio_pin, GPIO.RISING, callback=pulse_detected, bouncetime=15)
 
 # async def rpm_sender(websocket):
