@@ -4,6 +4,7 @@ import asyncio
 import statistics
 
 gpio_pin = 27
+last_outliers = []
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(gpio_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
