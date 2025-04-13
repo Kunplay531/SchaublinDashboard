@@ -24,7 +24,7 @@ def pulse_detected(channel):
             new_rpm = (1 / elapsed_time) * 60
 
             
-            if len(values)>3:
+            if len(values)>5:
                 values.append(new_rpm)
                 rpm_value = statistics.median(values)
                 values= []
