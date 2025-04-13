@@ -33,7 +33,7 @@ def pulse_detected(channel):
 
     last_pulse_time = current_time
 
-GPIO.add_event_detect(gpio_pin, GPIO.RISING, callback=pulse_detected, bouncetime=15)
+GPIO.add_event_detect(gpio_pin, GPIO.RISING, callback=pulse_detected, bouncetime=20)
 
 # async def rpm_sender(websocket):
 #     print("Client connected. Sending RPM values.")
