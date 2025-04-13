@@ -1,6 +1,7 @@
 import asyncio
-#import websockets
+# import websockets
 import time
+import statistics
 import RPi.GPIO as GPIO
 
 gpio_pin = 27
@@ -9,18 +10,27 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(gpio_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 last_pulse_time = None
+rpm_measurements = []
 rpm_value = 0
 
 def pulse_detected(channel):
-    global last_pulse_time, rpm_value
+    global last_pulse_time, rpm_value, rpm_measurements
     current_time = time.monotonic()
 
     if last_pulse_time is not None:
-        elapsed_time = current_time - last_pulse_time  # Time between pulses
-        if elapsed_time > 0:  # Prevent division by zero
-            rpm_value = (1 / elapsed_time) * 60  # Convert Hz to RPM
+        elapsed_time = current_time - last_pulse_time
+        if elapsed_time > 0:
+            new_rpm = (1 / elapsed_time) * 60
+            rpm_measurements.append(new_rpm)
 
-    last_pulse_time = current_time  # Update last pulse time
+            # Keep only the last 5 measurements
+            if len(rpm_measurements) > 5:
+                rpm_measurements.pop(0)
+
+            # Update rpm_value to the median of the last 5
+            rpm_value = statistics.median(rpm_measurements)
+
+    last_pulse_time = current_time
 
 GPIO.add_event_detect(gpio_pin, GPIO.RISING, callback=pulse_detected, bouncetime=15)
 
