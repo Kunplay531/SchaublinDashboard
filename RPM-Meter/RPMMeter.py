@@ -1,4 +1,5 @@
 import time
+import asyncio
 import statistics
 import RPi.GPIO as GPIO
 
