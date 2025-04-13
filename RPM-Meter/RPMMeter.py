@@ -52,6 +52,6 @@ async def main():
     
     while True:
         print(f"RPM: {rpm_value:.2f}")
-        await asyncio.sleep(1)  # Update every second   
+        await asyncio.sleep(0,1)  # Update every second   
 
 asyncio.run(main())
