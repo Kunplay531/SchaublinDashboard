@@ -18,17 +18,22 @@ MAX_CHANGE_PERCENT = 30  # Allow ±30% change
 def is_outlier(new_value, reference):
     global last_outliers
     last_outliers.append(new_value)
+    
     if reference == 0:
+        last_outliers = []
         return False
+    
     if len(last_outliers) > 5:
-        change = abs(statistics.median(last_outliers)) / new_value * 100
+        change = new_value / abs(statistics.median(last_outliers))  * 100
         last_outliers=[]
         if change < MAX_CHANGE_PERCENT:
             return False
+        
     change = abs(new_value - reference) / reference * 100
     if change < MAX_CHANGE_PERCENT:
         last_outliers=[]
         return False
+    
     return True
 
 def pulse_detected(channel):
