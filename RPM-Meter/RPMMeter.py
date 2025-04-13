@@ -1,6 +1,7 @@
 import time
 import RPi.GPIO as GPIO
 import asyncio
+import statistics
 
 gpio_pin = 27
 
@@ -14,8 +15,14 @@ rpm_value = 0
 MAX_CHANGE_PERCENT = 10  # Allow ±30% change
 
 def is_outlier(new_value, reference):
+    global last_outliers
+    last_outliers.append(new_value)
     if reference == 0:
         return False
+    if len(last_outliers) > 5:
+        change = abs(statistics.median(last_outliers)) / reference * 100
+        if change > MAX_CHANGE_PERCENT:
+            return True
     change = abs(new_value - reference) / reference * 100
     return change > MAX_CHANGE_PERCENT
 
