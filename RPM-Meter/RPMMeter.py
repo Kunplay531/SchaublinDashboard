@@ -4,40 +4,18 @@ import asyncio
 import statistics
 
 gpio_pin = 27
-last_outliers = []
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(gpio_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 last_pulse_time = None
 rpm_value = 0
+values = []
 
-# Define threshold: max allowed % change between measurements
-MAX_CHANGE_PERCENT = 30  # Allow ±30% change
-
-def is_outlier(new_value, reference):
-    global last_outliers
-    last_outliers.append(new_value)
-    
-    if reference == 0:
-        last_outliers = []
-        return False
-    
-    if len(last_outliers) > 5:
-        change = new_value / abs(statistics.median(last_outliers))  * 100
-        last_outliers=[]
-        if change < MAX_CHANGE_PERCENT:
-            return False
-        
-    change = abs(new_value - reference) / reference * 100
-    if change < MAX_CHANGE_PERCENT:
-        last_outliers=[]
-        return False
-    
-    return True
 
 def pulse_detected(channel):
     global last_pulse_time, rpm_value
+    global values
     current_time = time.monotonic()
 
     if last_pulse_time is not None:
@@ -45,9 +23,13 @@ def pulse_detected(channel):
         if elapsed_time > 0:
             new_rpm = (1 / elapsed_time) * 60
 
-            # Filter out sudden spikes
-            if not is_outlier(new_rpm, rpm_value):
-                rpm_value = new_rpm
+            
+            if len(values)>9:
+                values.append(new_rpm)
+                rpm_value = statistics.median(values)
+                values= []
+            else:
+                values.append(new_rpm)
 
     last_pulse_time = current_time
 
