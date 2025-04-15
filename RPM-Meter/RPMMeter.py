@@ -51,7 +51,7 @@ async def resetter():
             rpm_value = 0
             values.clear()  # optional: clear old data when idle
 
-        print(f"RPM: {rpm_value:.2f}")
+        #print(f"RPM: {rpm_value:.2f}")
         await asyncio.sleep(1)  # Update every second
         
 async def rpm_sender(websocket):
@@ -64,5 +64,10 @@ async def rpm_sender(websocket):
      except websockets.exceptions.ConnectionClosed:
          print("Client disconnected.")
  
-asyncio.run(resetter())
-asyncio.run(ws_starter())
+async def main():
+    await asyncio.gather(
+        resetter(),
+        ws_starter()
+    )
+
+asyncio.run(main())
