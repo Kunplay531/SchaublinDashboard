@@ -1,0 +1,16 @@
+[Unit]
+Description=Schaublin Dashboard Service
+After=network.target
+
+[Service]
+Type=simple
+User=k
+WorkingDirectory=/home/k/SchaublinDashboard
+ExecStart=/home/k/SchaublinDashboard/Systemd/start-dashboard.sh
+Restart=always
+Environment=NODE_ENV=production
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
