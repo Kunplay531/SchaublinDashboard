@@ -1,5 +1,3 @@
-
-
 // ======== DOM Elements =========
 const rpmValueElement = document.getElementById("rpm-value");
 const rpmTextElement  = document.querySelector(".RPM-text");
@@ -22,26 +20,20 @@ function changeBackground(bgToActivate) {
 
 // ======== Connect to RPM Socket =========
 function connectRpmSocket() {
-  rpmSocket = new WebSocket("ws://172.17.0.1:8000");
+  rpmSocket = new WebSocket("ws://localhost:8000");
 
   rpmSocket.onopen = () => {
     console.log("[RPM] Connected");
   };
 
   rpmSocket.onmessage = (event) => {
-    // Ignore keep-alive "pong"
     if (event.data === "pong") return;
-
-    // If server sends "ping," respond with "pong"
     if (event.data === "ping") {
       rpmSocket.send("pong");
       return;
     }
-
-    // Don’t update display if E-Stop is active
     if (e_stop) return;
 
-    // Handle the RPM value
     const rpm = parseInt(event.data, 10) || 0;
     rpmValueElement.textContent = rpm;
 
@@ -54,7 +46,6 @@ function connectRpmSocket() {
     }
   };
 
-  // On close or error, try reconnecting after short delay
   rpmSocket.onclose = () => {
     console.log("[RPM] Disconnected – retry in 2s");
     setTimeout(connectRpmSocket, 2000);
@@ -62,39 +53,39 @@ function connectRpmSocket() {
 
   rpmSocket.onerror = (err) => {
     console.error("[RPM] Socket error:", err);
-    // Close before reconnecting to ensure a clean state
     rpmSocket.close();
   };
 }
 
-// ======== Connect to E-Stop Socket =========
+// ======== Connect to E-Stop Socket (only if env var is set) =========
 function connectEstopSocket() {
-  estopSocket = new WebSocket("ws://Schaublin.local:8002");
+  const estopUrl = window.ESTOP_SOCKET_URL;
+
+  if (!estopUrl) {
+    console.warn("[E-Stop] Skipping connection – no ESTOP_SOCKET_URL defined");
+    return;
+  }
+
+  estopSocket = new WebSocket(estopUrl);
 
   estopSocket.onopen = () => {
-    console.log("[E-Stop] Connected");
+    console.log("[E-Stop] Connected to", estopUrl);
   };
 
   estopSocket.onmessage = (event) => {
-    // Ignore keep-alive "pong"
     if (event.data === "pong") return;
-
-    // If server sends "ping," respond with "pong"
     if (event.data === "ping") {
       estopSocket.send("pong");
       return;
     }
 
-    // If E-Stop is triggered
     if (event.data === "1") {
       e_stop = true;
       rpmValueElement.style.color = "red";
       rpmValueElement.textContent = "Not AUS!!!";
       changeBackground(backgrounds.jail);
       rpmTextElement.style.display = "none";
-    }
-    // If E-Stop is released
-    else if (event.data === "0") {
+    } else if (event.data === "0") {
       e_stop = false;
       rpmValueElement.textContent = "...";
       rpmValueElement.style.color = "white";
@@ -126,4 +117,4 @@ setInterval(() => {
 
 // ======== Initialize both sockets on page load =========
 connectRpmSocket();
-connectEstopSocket();
+connectEstopSocket(); // will be skipped if env var is not defined
