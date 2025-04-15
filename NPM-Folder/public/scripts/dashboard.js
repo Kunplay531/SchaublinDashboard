@@ -20,7 +20,7 @@ function changeBackground(bgToActivate) {
 
 // ======== Connect to RPM Socket =========
 function connectRpmSocket() {
-  rpmSocket = new WebSocket("ws://localhost:8000");
+  rpmSocket = new WebSocket("ws://schaublin.local:8000");
 
   rpmSocket.onopen = () => {
     console.log("[RPM] Connected");
