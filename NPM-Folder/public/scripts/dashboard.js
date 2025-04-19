@@ -1,6 +1,8 @@
 // ======== DOM Elements =========
 const rpmValueElement = document.getElementById("rpm-value");
 const rpmTextElement  = document.querySelector(".RPM-text");
+const connectionPopup = document.getElementById("connection-popup");
+
 const backgrounds = {
   work : document.getElementById("bg-work"),
   turbo: document.getElementById("bg-turbo"),
@@ -125,14 +127,14 @@ function checkServerReachability() {
       if (!serverReachable) {
         console.log("[Server] Connection restored.");
         serverReachable = true;
-        document.body.classList.remove("server-disconnected");
+        connectionPopup.classList.add("hidden"); // Hides the popup
       }
     })
     .catch(() => {
       if (serverReachable) {
         console.warn("[Server] Server not reachable!");
         serverReachable = false;
-        document.body.classList.add("server-disconnected");
+        connectionPopup.classList.remove("hidden"); // Shows the popup
       }
     });
 }
