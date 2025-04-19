@@ -85,3 +85,23 @@ html {
 .hide-rpm-text {
     display: none;
 }
+
+#connection-popup {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 60, 60, 0.95);
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    font-size: 1rem;
+    z-index: 9999;
+    transition: opacity 0.3s ease;
+}
+
+#connection-popup.hidden {
+opacity: 0;
+pointer-events: none;
+}

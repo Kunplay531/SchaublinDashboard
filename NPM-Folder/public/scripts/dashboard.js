@@ -115,6 +115,45 @@ setInterval(() => {
   }
 }, 5000); // ping every 5 seconds
 
+
+
+let serverReachable = true;
+
+function checkServerReachability() {
+  fetch("/", { method: "HEAD", cache: "no-store" })
+    .then(() => {
+      if (!serverReachable) {
+        console.log("[Server] Connection restored.");
+        serverReachable = true;
+        document.body.classList.remove("server-disconnected");
+      }
+    })
+    .catch(() => {
+      if (serverReachable) {
+        console.warn("[Server] Server not reachable!");
+        serverReachable = false;
+        document.body.classList.add("server-disconnected");
+      }
+    });
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    console.log("[Page] Became visible – checking connections");
+
+    checkServerReachability(); // force a check immediately
+
+    if (!rpmSocket || rpmSocket.readyState !== WebSocket.OPEN) {
+      connectRpmSocket();
+    }
+    if (window.ESTOP_SOCKET_URL && (!estopSocket || estopSocket.readyState !== WebSocket.OPEN)) {
+      connectEstopSocket();
+    }
+  }
+});
+
+
 // ======== Initialize both sockets on page load =========
 connectRpmSocket();
 connectEstopSocket(); // will be skipped if env var is not defined
+setInterval(checkServerReachability, 5000); // every 5 seconds
